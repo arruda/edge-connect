@@ -19,8 +19,8 @@ def main(mode=None):
     config = load_config(mode)
 
 
-    # cuda visble devices
-    os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(str(e) for e in config.GPU)
+    # # cuda visble devices
+    # os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(str(e) for e in config.GPU)
 
 
     # init device
@@ -43,10 +43,10 @@ def main(mode=None):
     random.seed(config.SEED)
 
 
-
     # build the model and initialize
     model = EdgeConnect(config)
     model.load()
+
 
 
     # model training
@@ -62,7 +62,7 @@ def main(mode=None):
 
     # eval mode
     else:
-        print('\nstart eval...\n')
+        print('\nstart eval many...\n')
         model.eval()
 
 
@@ -78,7 +78,7 @@ def load_config(mode=None):
     parser.add_argument('--model', type=int, choices=[1, 2, 3, 4], help='1: edge model, 2: inpaint model, 3: edge-inpaint model, 4: joint model')
 
     # test mode
-    if mode == 2:
+    if mode >= 2:
         parser.add_argument('--input', type=str, help='path to the input images directory or an input image')
         parser.add_argument('--mask', type=str, help='path to the masks directory or a mask file')
         parser.add_argument('--edge', type=str, help='path to the edges directory or an edge file')

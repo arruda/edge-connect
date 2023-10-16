@@ -62,7 +62,10 @@ class Dataset(torch.utils.data.Dataset):
 
         # resize/crop if needed
         if size != 0:
-            img = self.resize(img, size, size)
+            img = self.resize(img, 512, 288)
+        # dont care neet to resize for good results anyway
+        # img = self.resize(img, 288, 512)
+        img = self.resize(img, 288, 512, centerCrop=False)
 
         # create grayscale image
         img_gray = rgb2gray(img)
@@ -105,7 +108,8 @@ class Dataset(torch.utils.data.Dataset):
         else:
             imgh, imgw = img.shape[0:2]
             edge = imread(self.edge_data[index])
-            edge = self.resize(edge, imgh, imgw)
+            edge = self.resize(edge, imgh, imgw, centerCrop=False)
+            # edge = self.resize(edge, imgh, imgw)
 
             # non-max suppression
             if self.nms == 1:
@@ -138,7 +142,8 @@ class Dataset(torch.utils.data.Dataset):
         if mask_type == 3:
             mask_index = random.randint(0, len(self.mask_data) - 1)
             mask = imread(self.mask_data[mask_index])
-            mask = self.resize(mask, imgh, imgw)
+            # mask = self.resize(mask, imgh, imgw)
+            mask = self.resize(mask, imgh, imgw, centerCrop=False)
             mask = (mask > 0).astype(np.uint8) * 255       # threshold due to interpolation
             return mask
 
@@ -198,3 +203,5 @@ class Dataset(torch.utils.data.Dataset):
 
             for item in sample_loader:
                 yield item
+
+

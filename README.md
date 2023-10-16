@@ -2,7 +2,7 @@
 [ArXiv](https://arxiv.org/abs/1901.00212) | [BibTex](#citation)
 ### Introduction:
 We develop a new approach for image inpainting that does a better job of reproducing filled regions exhibiting fine details inspired by our understanding of how artists work: *lines first, color next*. We propose a two-stage adversarial model EdgeConnect that comprises of an edge generator followed by an image completion network. The edge generator hallucinates edges of the missing region (both regular and irregular) of the image, and the image completion network fills in the missing regions using hallucinated edges as a priori. Detailed description of the system can be found in our [paper](https://arxiv.org/abs/1901.00212).
-<p align='center'>  
+<p align='center'>
   <img src='https://user-images.githubusercontent.com/1743048/50673917-aac15080-0faf-11e9-9100-ef10864087c8.png' width='870'/>
 </p>
 (a) Input images with missing regions. The missing regions are depicted in white. (b) Computed edge masks. Edges drawn in black are computed (for the available regions) using Canny edge detector; whereas edges shown in blue are hallucinated by the edge generator network. (c) Image inpainting results of the proposed approach.
@@ -26,7 +26,7 @@ pip install -r requirements.txt
 
 ## Datasets
 ### 1) Images
-We use [Places2](http://places2.csail.mit.edu), [CelebA](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html) and [Paris Street-View](https://github.com/pathak22/context-encoder) datasets. To train a model on the full dataset, download datasets from official websites. 
+We use [Places2](http://places2.csail.mit.edu), [CelebA](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html) and [Paris Street-View](https://github.com/pathak22/context-encoder) datasets. To train a model on the full dataset, download datasets from official websites.
 
 After downloading, run [`scripts/flist.py`](scripts/flist.py) to generate train, test and validation set file lists. For example, to generate the training set file list on Places2 dataset run:
 ```bash
@@ -82,8 +82,8 @@ python test.py \
 We provide some test examples under `./examples` directory. Please download the [pre-trained models](#getting-started) and run:
 ```bash
 python test.py \
-  --checkpoints ./checkpoints/places2 
-  --input ./examples/places2/images 
+  --checkpoints ./checkpoints/places2
+  --input ./examples/places2/images
   --mask ./examples/places2/masks
   --output ./checkpoints/results
 ```
@@ -145,7 +145,7 @@ LR                     | 0.0001| learning rate
 D2G_LR                 | 0.1   | discriminator/generator learning rate ratio
 BETA1                  | 0.0   | adam optimizer beta1
 BETA2                  | 0.9   | adam optimizer beta2
-BATCH_SIZE             | 8     | input batch size 
+BATCH_SIZE             | 8     | input batch size
 INPUT_SIZE             | 256   | input image size for training. (0 for original size)
 SIGMA                  | 2     | standard deviation of the Gaussian filter used in Canny edge detector </br>(0: random, -1: no edge)
 MAX_ITERS              | 2e6   | maximum number of iterations to train the model
@@ -188,3 +188,8 @@ If you use this code for your research, please cite our papers <a href="https://
   year = {2019}
 }
 ```
+
+
+python test.py  --checkpoints ./checkpoints/places2  --input ../live-street-datasets/my-creations/selected/Subsets/TS-D-Q-2-10S --mask ../semantic-image-segmentation/outputs/masks/TS-D-Q-2-10S/person  --output ./checkpoints/results
+
+python test.py  --checkpoints ./checkpoints/places2  --input ../live-street-datasets/my-creations/selected/Subsets/TS-D-Q-1b-10S --mask ../semantic-image-segmentation/outputs/masks/TS-D-Q-1b-10S/car  --output ./checkpoints/results

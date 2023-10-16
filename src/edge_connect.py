@@ -1,7 +1,13 @@
 import os
 import numpy as np
+
+from PIL import Image
+
+import cv2
 import torch
 from torch.utils.data import DataLoader
+
+
 from .dataset import Dataset
 from .models import EdgeModel, InpaintingModel
 from .utils import Progbar, create_dir, stitch_images, imsave
@@ -211,6 +217,7 @@ class EdgeConnect():
         print('\nEnd training....')
 
     def eval(self):
+        self.config.BATCH_SIZE = 1
         val_loader = DataLoader(
             dataset=self.val_dataset,
             batch_size=self.config.BATCH_SIZE,
@@ -293,6 +300,89 @@ class EdgeConnect():
             logs = [("it", iteration), ] + logs
             progbar.add(len(images), values=logs)
 
+
+    def eval_many(self):
+        self.config.BATCH_SIZE = 1
+        val_loader = DataLoader(
+            dataset=self.val_dataset,
+            batch_size=1,
+        )
+
+        model = self.config.MODEL
+        total = len(self.val_dataset)
+
+        # self.edge_model.eval()
+        # self.inpaint_model.eval()
+
+        # progbar = Progbar(total, width=20, stateful_metrics=['it'])
+        # iteration = 0
+
+        # for items in val_loader:
+        #     iteration += 1
+        #     images, images_gray, edges, masks = self.cuda(*items)
+
+        #     # edge model
+        #     if model == 1:
+        #         # eval
+        #         outputs, gen_loss, dis_loss, logs = self.edge_model.process(images_gray, edges, masks)
+
+        #         # metrics
+        #         precision, recall = self.edgeacc(edges * masks, outputs * masks)
+        #         logs.append(('precision', precision.item()))
+        #         logs.append(('recall', recall.item()))
+
+
+        #     # inpaint model
+        #     elif model == 2:
+        #         # eval
+        #         outputs, gen_loss, dis_loss, logs = self.inpaint_model.process(images, edges, masks)
+        #         outputs_merged = (outputs * masks) + (images * (1 - masks))
+
+        #         # metrics
+        #         psnr = self.psnr(self.postprocess(images), self.postprocess(outputs_merged))
+        #         mae = (torch.sum(torch.abs(images - outputs_merged)) / torch.sum(images)).float()
+        #         logs.append(('psnr', psnr.item()))
+        #         logs.append(('mae', mae.item()))
+
+
+        #     # inpaint with edge model
+        #     elif model == 3:
+        #         # eval
+        #         outputs = self.edge_model(images_gray, edges, masks)
+        #         outputs = outputs * masks + edges * (1 - masks)
+
+        #         outputs, gen_loss, dis_loss, logs = self.inpaint_model.process(images, outputs.detach(), masks)
+        #         outputs_merged = (outputs * masks) + (images * (1 - masks))
+
+        #         # metrics
+        #         psnr = self.psnr(self.postprocess(images), self.postprocess(outputs_merged))
+        #         mae = (torch.sum(torch.abs(images - outputs_merged)) / torch.sum(images)).float()
+        #         logs.append(('psnr', psnr.item()))
+        #         logs.append(('mae', mae.item()))
+
+
+        #     # joint model
+        #     else:
+        #         # eval
+        #         e_outputs, e_gen_loss, e_dis_loss, e_logs = self.edge_model.process(images_gray, edges, masks)
+        #         e_outputs = e_outputs * masks + edges * (1 - masks)
+        #         i_outputs, i_gen_loss, i_dis_loss, i_logs = self.inpaint_model.process(images, e_outputs, masks)
+        #         outputs_merged = (i_outputs * masks) + (images * (1 - masks))
+
+        #         # metrics
+        #         psnr = self.psnr(self.postprocess(images), self.postprocess(outputs_merged))
+        #         mae = (torch.sum(torch.abs(images - outputs_merged)) / torch.sum(images)).float()
+        #         precision, recall = self.edgeacc(edges * masks, e_outputs * masks)
+        #         e_logs.append(('pre', precision.item()))
+        #         e_logs.append(('rec', recall.item()))
+        #         i_logs.append(('psnr', psnr.item()))
+        #         i_logs.append(('mae', mae.item()))
+        #         logs = e_logs + i_logs
+
+
+        #     logs = [("it", iteration), ] + logs
+        #     progbar.add(len(images), values=logs)
+
     def test(self):
         self.edge_model.eval()
         self.inpaint_model.eval()
@@ -304,44 +394,65 @@ class EdgeConnect():
             dataset=self.test_dataset,
             batch_size=1,
         )
+        with torch.no_grad():
+            index = 0
+            for items in test_loader:
+                name = self.test_dataset.load_name(index)
+                images, images_gray, edges, masks = self.cuda(*items)
 
-        index = 0
-        for items in test_loader:
-            name = self.test_dataset.load_name(index)
-            images, images_gray, edges, masks = self.cuda(*items)
-            index += 1
+                # edge model
+                if model == 1:
+                    outputs = self.edge_model(images_gray, edges, masks)
+                    outputs_merged = (outputs * masks) + (edges * (1 - masks))
 
-            # edge model
-            if model == 1:
-                outputs = self.edge_model(images_gray, edges, masks)
-                outputs_merged = (outputs * masks) + (edges * (1 - masks))
+                # inpaint model
+                elif model == 2:
+                    outputs = self.inpaint_model(images, edges, masks)
+                    outputs_merged = (outputs * masks) + (images * (1 - masks))
 
-            # inpaint model
-            elif model == 2:
-                outputs = self.inpaint_model(images, edges, masks)
-                outputs_merged = (outputs * masks) + (images * (1 - masks))
+                # inpaint with edge model / joint model
+                else:
+                    edges = self.edge_model(images_gray, edges, masks).detach()
+                    outputs = self.inpaint_model(images, edges, masks)
+                    outputs_merged = (outputs * masks) + (images * (1 - masks))
 
-            # inpaint with edge model / joint model
-            else:
-                edges = self.edge_model(images_gray, edges, masks).detach()
-                outputs = self.inpaint_model(images, edges, masks)
-                outputs_merged = (outputs * masks) + (images * (1 - masks))
+                output = self.postprocess(outputs_merged).cpu()[0]
+                output_res = self.test_dataset.resize(output, 1080, 1920, centerCrop=False)
 
-            output = self.postprocess(outputs_merged)[0]
-            path = os.path.join(self.results_path, name)
-            print(index, name)
+                path = os.path.join(self.results_path, name)
+                print(index, name)
 
-            imsave(output, path)
 
-            if self.debug:
-                edges = self.postprocess(1 - edges)[0]
-                masked = self.postprocess(images * (1 - masks) + masks)[0]
-                fname, fext = name.split('.')
+                fixed_output = self.fix_resize(index, output_res)
+                # fixed_output, mask_fix = self.fix_resize(index, output_res)
+                im = Image.fromarray(fixed_output.astype(np.uint8).squeeze())
+                im.save(path)
+                # im_mask = Image.fromarray(mask_fix.astype(np.uint8).squeeze())
+                # im_mask.save(os.path.join(self.results_path, f'm_{name}'))
 
-                imsave(edges, os.path.join(self.results_path, fname + '_edge.' + fext))
-                imsave(masked, os.path.join(self.results_path, fname + '_masked.' + fext))
+                if self.debug:
+                    edges = self.postprocess(1 - edges)[0]
+                    masked = self.postprocess(images * (1 - masks) + masks)[0]
+                    fname, fext = name.split('.')
 
-        print('\nEnd test....')
+                    imsave(edges, os.path.join(self.results_path, fname + '_edge.' + fext))
+                    imsave(masked, os.path.join(self.results_path, fname + '_masked.' + fext))
+
+                index += 1
+
+
+            print('\nEnd test....')
+
+    def fix_resize(self, index, res_image):
+        original_img = cv2.cvtColor(cv2.imread(self.test_dataset.data[index]), cv2.COLOR_BGR2RGB)
+        _, original_mask = cv2.threshold(cv2.cvtColor(
+            cv2.imread(self.test_dataset.mask_data[index]), cv2.COLOR_BGR2GRAY
+        ), 120, 255, cv2.THRESH_BINARY)
+        masked_normalized = cv2.bitwise_and(res_image, res_image, mask=original_mask)
+
+        image_bg = cv2.bitwise_and(original_img, original_img, mask=cv2.bitwise_not(original_mask))
+        merged_imgs = cv2.add(image_bg, masked_normalized)
+        return merged_imgs
 
     def sample(self, it=None):
         # do not sample when validation set is empty
