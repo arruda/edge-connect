@@ -193,3 +193,6 @@ If you use this code for your research, please cite our papers <a href="https://
 python test.py  --checkpoints ./checkpoints/places2  --input ../live-street-datasets/my-creations/selected/Subsets/TS-D-Q-2-10S --mask ../semantic-image-segmentation/outputs/masks/TS-D-Q-2-10S/person  --output ./checkpoints/results
 
 python test.py  --checkpoints ./checkpoints/places2  --input ../live-street-datasets/my-creations/selected/Subsets/TS-D-Q-1b-10S --mask ../semantic-image-segmentation/outputs/masks/TS-D-Q-1b-10S/car  --output ./checkpoints/results
+
+
+python test.py  --checkpoints ./checkpoints/places2  --input ../live-street-datasets/my-creations/selected/Subsets/TS-D-B-2-10S --mask ../semantic-image-segmentation/outputs/masks/TS-D-B-2-10S/car  --output ./checkpoints/TS-D-B-2-10S/car
